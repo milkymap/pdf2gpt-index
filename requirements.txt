@@ -1,0 +1,7 @@
+sentence-transformers 
+click 
+tiktoken 
+pydantic 
+openai 
+protobuf 
+PyPDF2

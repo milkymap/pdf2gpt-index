@@ -1,6 +1,8 @@
 import click 
 import openai 
 
+import torch as th 
+
 from libraries.strategies import * 
 
 @click.group(chain=True, invoke_without_command=True)
@@ -8,6 +10,8 @@ from libraries.strategies import *
 @click.option('--transformers_cache', envvar='TRANSFORMERS_CACHE', required=True)
 @click.pass_context
 def command_line_interface(ctx:click.core.Context, openai_api_key:str, transformers_cache:str):
+    device = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+    ctx.obj['device'] = device
     ctx.obj['tokenizer'] = load_tokenizer(encoding_name='gpt-3.5-turbo')
     ctx.obj['openai_api_key'] = openai_api_key
     ctx.obj['transformers_cache'] = transformers_cache
@@ -18,12 +22,12 @@ def command_line_interface(ctx:click.core.Context, openai_api_key:str, transform
 @click.pass_context
 def build_index(ctx:click.core.Context, path2pdf_file:str, model_name:str):
     tokenizer = ctx.obj['tokenizer']
-    transformer = load_transformers(model_name, cache_folder=ctx.obj['transformers_cache'], device='cuda:0')
+    transformer = load_transformers(model_name, cache_folder=ctx.obj['transformers_cache'], device=ctx.obj['device'])
 
     pages = convert_pdf_to_text(path2pdf_file)
     print('nb pages: ', len(pages))
     chunks = split_pages_into_chunks(pages, 256, tokenizer)
-    knowledge_base = vectorize(chunks, transformer, device='cuda:0')
+    knowledge_base = vectorize(chunks, transformer, device=ctx.obj['device'])
 
     ctx.obj['knowledge_base'] = knowledge_base  # [(chunk, embedding), ...]
     ctx.obj['transformer'] = transformer
@@ -40,7 +44,7 @@ def explore_index(ctx:click.core.Context, top_k:int):
     while keep_looping:
         try:
             query = input('Enter your query:')
-            query_embedding = ctx.obj['transformer'].encode(query, device='cuda:0')
+            query_embedding = ctx.obj['transformer'].encode(query, device=ctx.obj['device'])
             paragraphes = find_candidates(
                 query_embedding=query_embedding,
                 chunks=chunks,

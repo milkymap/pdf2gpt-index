@@ -7,7 +7,7 @@ build gpt-index using chatgpt and sentence-transformers
     python -m venv env 
     source env/bin/activate
     pip install --upgrade pip
-    pip install sentence-transformers click tiktoken pydantic openai protobuf
+    pip install -r requirements.txt
 ```
 
 ## usage 
